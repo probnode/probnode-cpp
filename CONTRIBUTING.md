@@ -40,7 +40,7 @@ CI builds and tests on Linux, macOS and Windows.
 ## Pull requests
 
 - One topic per pull request, with a test that fails without the change.
-- Add a line to `CHANGELOG.md` under the unreleased version.
+- Add a line to `CHANGELOG.md` under `[Unreleased]`.
 
 ## Code of conduct
 

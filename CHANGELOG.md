@@ -1,8 +1,17 @@
 # Changelog
 
-probnode-cpp follows semantic versioning. Until 1.0, a minor version may change the API.
+All notable changes to probnode-cpp are recorded here. The format follows
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the library follows
+[Semantic Versioning](https://semver.org/spec/v2.0.0.html). Until 1.0, a minor version may change
+the API.
 
-## 0.1.0 - unreleased
+## [Unreleased]
+
+## [0.1.0] - 2026-11-13
+
+First release of the official C++ client.
+
+### Added
 
 - `probnode::Client` (synchronous, libcurl): `login`, `me`, `usage`; `datasets`, `series`,
   `markets`, `coverage`, `samples`; `files` (hourly or `market_day`, narrowed by market and
@@ -14,4 +23,8 @@ probnode-cpp follows semantic versioning. Until 1.0, a minor version may change 
 - The key from `ClientOptions`, `PROBNODE_API_KEY`, or the file `probnode login` saves
   (`~/.config/probnode.json`, shared with the Python command line).
 - A bundled SHA-256, `probnode::Sha256` and `probnode::sha256_file`.
-- CMake: `find_package(probnode)` after install, or FetchContent.
+- CMake: `find_package(probnode)` after install, or FetchContent. Tested on Linux, macOS and
+  Windows.
+
+[Unreleased]: https://github.com/probnode/probnode-cpp/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/probnode/probnode-cpp/releases/tag/v0.1.0

@@ -1,33 +1,56 @@
 <p align="center">
-  <a href="https://probnode.com"><img src="assets/probnode-logo.png" alt="ProbNode" width="96" height="96"></a>
+  <a href="https://probnode.com"><img src="https://raw.githubusercontent.com/probnode/probnode-cpp/main/assets/probnode-logo.png" alt="ProbNode" width="96" height="96"></a>
 </p>
 
 <h1 align="center">probnode-cpp</h1>
 
+<p align="center"><b>The official C++ client for ProbNode: Polymarket order books, trades and bars as sha256-checked files.</b></p>
+
 <p align="center">
   <a href="https://github.com/probnode/probnode-cpp/actions/workflows/ci.yml"><img src="https://github.com/probnode/probnode-cpp/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/probnode/probnode-cpp/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License: Apache-2.0"></a>
   <img src="https://img.shields.io/badge/C%2B%2B-17-blue.svg" alt="C++17">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="Apache-2.0"></a>
+  <img src="https://img.shields.io/badge/CMake-3.18%2B-blue.svg" alt="CMake 3.18+">
 </p>
 
-The official C++ client for [ProbNode](https://probnode.com): prediction-market order books at
-full depth, trades, top-of-book grids, bars and market statistics, delivered as parquet, csv.gz
-and [Probe](https://github.com/probnode/probe) files with a sha256 for every file.
+## Overview
 
-The same API has an official [Python client](https://github.com/probnode/probnode-sdk) and an
-official [Rust client](https://github.com/probnode/probnode-rs).
+`probnode-cpp` is the official C++ client for the [ProbNode](https://probnode.com) API. ProbNode
+records Polymarket at full depth: every change of every price level of every outcome token, every
+trade, and every on-chain fill. The client lists, signs and downloads that data as parquet, csv.gz
+and [Probe](https://github.com/probnode/probe) files, checks every file against its sha256, and
+builds one market's UTC day of any market-day schema on request.
 
-## Requirements
+The same API has official clients for [Python](https://github.com/probnode/probnode-sdk) and
+[Rust](https://github.com/probnode/probnode-rs), with the same methods.
+
+## Features
+
+- **Plain C++17.** One synchronous `probnode::Client`; public headers include only the standard
+  library.
+- **Every endpoint, typed.** Account, catalog, coverage, files, signed links, market-day exports
+  and time series, as structs with `std::optional` for nullable fields.
+- **Downloads you can trust.** Each file is written to a `.part`, checked against the sha256 the
+  API listed, and only then renamed; a mismatch removes it and throws with kind `Checksum`.
+- **Fifteen market-day schemas.** From the full book (`book-max`) to top of book, trades, fills,
+  bars and daily market statistics, as parquet or csv.gz.
+- **Few dependencies.** libcurl for HTTP and TLS, nlohmann/json kept private, and a bundled
+  SHA-256: nothing links a crypto library for the checksum.
+- **CMake native.** `find_package(probnode)` after install, or FetchContent; tested on Linux,
+  macOS and Windows.
+- **Thread-safe reads.** The `const` methods may be called from several threads at once.
+
+## Installation
+
+Requirements:
 
 - A C++17 compiler: GCC 9+, Clang 10+, Apple Clang 12+, MSVC 2019+.
 - CMake 3.18+.
-- libcurl 7.68+ (with TLS: OpenSSL, Secure Transport or Schannel, as your libcurl was built).
+- libcurl 7.68+ (with TLS: OpenSSL, Secure Transport or Schannel, as your libcurl was built):
+  `apt install libcurl4-openssl-dev`, `dnf install libcurl-devel`, the macOS SDK, or
+  `vcpkg install curl` on Windows (then pass vcpkg's toolchain file to CMake).
 - [nlohmann/json](https://github.com/nlohmann/json) 3.11+, found if installed and fetched
   otherwise. It is private: no public header includes it.
-
-The sha256 check is bundled; nothing links a crypto library for it.
-
-## Install
 
 ### FetchContent
 
@@ -41,6 +64,9 @@ FetchContent_MakeAvailable(probnode)
 target_link_libraries(my_app PRIVATE probnode::probnode)
 ```
 
+Each [release](https://github.com/probnode/probnode-cpp/releases) also carries a source archive
+and its sha256, for a `URL` / `URL_HASH` pin or a package-manager port.
+
 ### find_package
 
 ```sh
@@ -53,9 +79,6 @@ cmake --install build --prefix /usr/local     # or any prefix on CMAKE_PREFIX_PA
 find_package(probnode 0.1 REQUIRED)
 target_link_libraries(my_app PRIVATE probnode::probnode)
 ```
-
-libcurl comes from your system: `apt install libcurl4-openssl-dev`, `dnf install libcurl-devel`,
-the macOS SDK, or `vcpkg install curl` on Windows (then pass vcpkg's toolchain file to CMake).
 
 ## Quick start
 
@@ -77,13 +100,15 @@ int main() {
 }
 ```
 
-The option structs are aggregates, so with C++20 they can be written inline:
+The option structs are aggregates, so in C++20 syntax they can be written inline:
 
 ```cpp
 auto day = pn.export_book("will-x-happen", "2026-11-12", {.schema = "book-max", .format = "parquet"});
 ```
 
-## The API, method by method
+## Usage
+
+### The API, method by method
 
 | method | call | key |
 |---|---|---|
@@ -103,10 +128,7 @@ auto day = pn.export_book("will-x-happen", "2026-11-12", {.schema = "book-max", 
 
 \* A sample downloads without a key: its link is already signed.
 
-`download` takes a `DataFile` from `files`, a `BookExport` from `export_book`, or a `Sample`. The
-file is written to `<object_path>.part` and renamed only when complete and its sha256 is the one
-the API listed; on a mismatch the partial file is removed and `probnode::Error` is thrown with
-kind `Checksum`.
+`download` takes a `DataFile` from `files`, a `BookExport` from `export_book`, or a `Sample`.
 
 ### Hourly files
 
@@ -130,12 +152,12 @@ auto day_files = pn.files("trades", "csv", "2026-11-10T00:00:00Z", "2026-11-12T0
 `book-max` (the default), `book-10`, `book-top`, `book-top-1s`, `book-top-1m`, `trades`,
 `trade-quotes`, `pair`, `fills`, `bars-1s`, `bars-1m`, `bars-1h`, `bars-1d`, `market-stats` and
 `market-events`, as `parquet` or `csv` (gzip). The day must have ended (UTC). Each schema's
-columns are described in the [schema reference](https://probnode.com/docs).
+columns are described in the [schema reference](https://probnode.com/docs/schemas).
 
 The `book_full` dataset's hourly files are Probe (`.evmin`); read them with the
 [Probe](https://github.com/probnode/probe) reader.
 
-## The key
+### The key
 
 `probnode::Client pn;` takes the key from `PROBNODE_API_KEY`, else from the file `probnode login`
 saves: `~/.config/probnode.json` (on Windows `%USERPROFILE%\.config\probnode.json`), or the path in
@@ -152,7 +174,9 @@ c.base_url = pn.base_url();
 c.save();
 ```
 
-## Errors
+Get a key at [probnode.com/login](https://probnode.com/login).
+
+### Errors
 
 Every failure throws `probnode::Error`. `kind()` says what failed (`Api`, `NoApiKey`,
 `Checksum`, `Transport`, `Io`, `Json`, `Invalid`); for an API refusal `status()` is the HTTP
@@ -160,28 +184,66 @@ status and `detail()` the API's own sentence, and `what()` reads
 `402: your plan does not include book-max`. A keyed call made without a key throws `NoApiKey`
 (status 401) and sends nothing.
 
-## Threads
+### Threads
 
 The `const` methods may be called from several threads at once; each call uses its own libcurl
 handle. `login` changes the key and must not race with other calls.
 
-## Examples
+### Examples and tests
 
 ```sh
 cmake -S . -B build && cmake --build build -j
 build/examples/probnode_datasets                       # no key needed
 build/examples/probnode_export_book will-x-happen 2026-11-12 trades csv
-```
 
-## Tests
-
-```sh
 ctest --test-dir build -R '^mock\.' --output-on-failure           # an in-process mock API
 PROBNODE_LIVE_BASE_URL=https://probnode.com ctest --test-dir build -R '^live\.'   # keyless endpoints
 ```
 
 The live tests are skipped unless `PROBNODE_LIVE_BASE_URL` is set.
 
+## Documentation
+
+- ProbNode documentation: [probnode.com/docs](https://probnode.com/docs)
+- Schemas, columns and units: [probnode.com/docs/schemas](https://probnode.com/docs/schemas)
+- API reference (OpenAPI 3.1): [probnode.com/openapi.json](https://probnode.com/openapi.json)
+- The headers in [`include/probnode/`](https://github.com/probnode/probnode-cpp/tree/main/include/probnode)
+  document every type and method.
+
+## Versioning and compatibility
+
+- The library follows [Semantic Versioning](https://semver.org); releases are tagged `vX.Y.Z`.
+  Until 1.0, a minor version may change the API; every change is listed in the
+  [CHANGELOG](https://github.com/probnode/probnode-cpp/blob/main/CHANGELOG.md).
+- `find_package(probnode 0.1)` accepts any 0.1.x.
+- C++17 and CMake 3.18 are the minimum; raising either is a minor-version change.
+- Tested on Linux (GCC), macOS (Apple Clang) and Windows (MSVC).
+- The client talks to the ProbNode API's `/v1`; fields the API adds later are ignored, so a newer
+  API does not break an older client.
+
+## Support
+
+- Questions about your account, plan or the data: [hello@probnode.com](mailto:hello@probnode.com)
+  or the [help centre](https://probnode.com/help).
+- Bugs and feature requests for this client: [open an issue](https://github.com/probnode/probnode-cpp/issues/new/choose).
+- Security reports: privately, as the [security policy](https://github.com/probnode/probnode-cpp/blob/main/SECURITY.md) says.
+
+## Contributing
+
+Pull requests are welcome; see [CONTRIBUTING.md](https://github.com/probnode/probnode-cpp/blob/main/CONTRIBUTING.md).
+This project follows the [Contributor Covenant](https://github.com/probnode/probnode-cpp/blob/main/CODE_OF_CONDUCT.md).
+
+## Other ProbNode libraries
+
+| Repository | Language | What it is | Package |
+|---|---|---|---|
+| [probnode-sdk](https://github.com/probnode/probnode-sdk) | Python | The official Python client, the `probnode` command line and the MCP server | [`probnode-sdk`](https://pypi.org/project/probnode-sdk/), [`probnode-mcp`](https://pypi.org/project/probnode-mcp/) on PyPI |
+| [probnode-rs](https://github.com/probnode/probnode-rs) | Rust | The official Rust client: async and blocking, typed models | `probnode` (crates.io release on the way) |
+| [probe](https://github.com/probnode/probe) | Rust, Python | Probe, the lossless order-book file format: specification, library and CLI | [`probe-format`](https://crates.io/crates/probe-format), [`probe-cli`](https://crates.io/crates/probe-cli) on crates.io |
+
 ## License
 
-Apache-2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE](https://github.com/probnode/probnode-cpp/blob/main/LICENSE) and
+[NOTICE](https://github.com/probnode/probnode-cpp/blob/main/NOTICE). Copyright 2026 ProbNode. The
+license covers the code in this repository; the data you download is licensed under the terms of
+your ProbNode plan.
