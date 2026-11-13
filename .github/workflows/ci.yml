@@ -1,0 +1,60 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: libcurl (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+      - name: libcurl (Windows, vcpkg)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          vcpkg install curl:x64-windows
+          echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
+      # macOS: the system libcurl of the SDK.
+
+      - name: Configure
+        shell: bash
+        run: |
+          werror="-DPROBNODE_WERROR=ON"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release $TOOLCHAIN $werror \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install"
+      - name: Build
+        run: cmake --build build --config Release -j 4
+      - name: Test (mock)
+        run: ctest --test-dir build -C Release -R "^mock\." --output-on-failure
+      - name: Test (live, keyless)
+        run: ctest --test-dir build -C Release -R "^live\." --output-on-failure
+        env:
+          PROBNODE_LIVE_BASE_URL: https://probnode.com
+      - name: Install, then find_package from a consumer
+        shell: bash
+        run: |
+          cmake --install build --config Release
+          cmake -S tests/find_package -B consumer $TOOLCHAIN -DCMAKE_PREFIX_PATH="$PWD/install"
+          cmake --build consumer --config Release
+          if [ -x consumer/consumer ]; then consumer/consumer; else consumer/Release/consumer.exe; fi

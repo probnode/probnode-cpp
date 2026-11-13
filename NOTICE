@@ -1,0 +1,8 @@
+probnode-cpp
+Copyright 2026 ProbNode
+
+This product includes software developed at ProbNode (https://probnode.com).
+
+The tests use cpp-httplib (MIT, https://github.com/yhirose/cpp-httplib); the library uses
+nlohmann/json (MIT, https://github.com/nlohmann/json). Neither is included in this repository;
+CMake fetches them.
