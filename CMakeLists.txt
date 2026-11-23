@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 project(probnode
-  VERSION 0.1.0
+  VERSION 0.2.0
   DESCRIPTION "Official C++ client for the ProbNode API"
   HOMEPAGE_URL "https://probnode.com"
   LANGUAGES CXX)
@@ -17,6 +17,7 @@ option(PROBNODE_BUILD_EXAMPLES "Build the examples" ${PROBNODE_IS_TOP_LEVEL})
 option(PROBNODE_INSTALL "Generate the install target" ${PROBNODE_IS_TOP_LEVEL})
 option(PROBNODE_WERROR "Treat the library's warnings as errors" OFF)
 option(PROBNODE_USE_SYSTEM_JSON "Use an installed nlohmann_json instead of fetching it" OFF)
+option(PROBNODE_LIVE "Build the Live API client (probnode/live.hpp, IXWebSocket + OpenSSL)" ON)
 
 include(FetchContent)
 include(GNUInstallDirs)
@@ -44,6 +45,21 @@ add_library(probnode
   src/parse.cpp
   src/sha256.cpp)
 add_library(probnode::probnode ALIAS probnode)
+
+# The Live API: one WebSocket, IXWebSocket over OpenSSL. Private: live.hpp includes none of it.
+if(PROBNODE_LIVE)
+  find_package(OpenSSL REQUIRED)
+  set(USE_TLS ON CACHE BOOL "" FORCE)
+  set(USE_OPEN_SSL ON CACHE BOOL "" FORCE)
+  set(USE_ZLIB OFF CACHE BOOL "" FORCE)
+  set(IXWEBSOCKET_INSTALL OFF CACHE BOOL "" FORCE)
+  FetchContent_Declare(ixwebsocket
+    GIT_REPOSITORY https://github.com/machinezone/IXWebSocket.git
+    GIT_TAG v11.4.6)
+  FetchContent_MakeAvailable(ixwebsocket)
+  target_sources(probnode PRIVATE src/live.cpp)
+  target_link_libraries(probnode PRIVATE ixwebsocket)
+endif()
 
 target_compile_features(probnode PUBLIC cxx_std_17)
 set_target_properties(probnode PROPERTIES
@@ -80,7 +96,12 @@ endif()
 
 if(PROBNODE_INSTALL)
   include(CMakePackageConfigHelpers)
-  install(TARGETS probnode EXPORT probnodeTargets
+  # A static probnode needs ixwebsocket at the consumer's link: it travels in our export set.
+  set(PROBNODE_EXPORT_TARGETS probnode)
+  if(PROBNODE_LIVE)
+    list(APPEND PROBNODE_EXPORT_TARGETS ixwebsocket)
+  endif()
+  install(TARGETS ${PROBNODE_EXPORT_TARGETS} EXPORT probnodeTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

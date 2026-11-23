@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(probnode_consumer LANGUAGES CXX)
 
-find_package(probnode 0.1 REQUIRED)
+find_package(probnode 0.2 REQUIRED)
 
 add_executable(consumer main.cpp)
 target_link_libraries(consumer PRIVATE probnode::probnode)

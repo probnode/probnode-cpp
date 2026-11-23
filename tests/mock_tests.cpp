@@ -505,7 +505,7 @@ TEST(every_market_day_schema_is_listed) {
   CHECK_EQ(probnode::kMarketDaySchemas.size(), 15u);
   CHECK(probnode::kMarketDaySchemas.front() == "book-max");
   CHECK(probnode::kMarketDaySchemas.back() == "market-events");
-  CHECK_EQ(std::string(probnode::version()), std::string("0.1.0"));
+  CHECK_EQ(std::string(probnode::version()), std::string("0.2.0"));
 }
 
 int main(int argc, char** argv) { return harness::run(argc, argv); }

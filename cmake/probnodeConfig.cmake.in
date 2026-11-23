@@ -3,6 +3,12 @@
 include(CMakeFindDependencyMacro)
 # A static probnode links libcurl into the consumer; a shared one finds it anyway, harmlessly.
 find_dependency(CURL)
+# The Live API client (probnode/live.hpp) links IXWebSocket over OpenSSL.
+set(PROBNODE_LIVE @PROBNODE_LIVE@)
+if(PROBNODE_LIVE)
+  find_dependency(OpenSSL)
+  find_dependency(Threads)
+endif()
 
 include("${CMAKE_CURRENT_LIST_DIR}/probnodeTargets.cmake")
 check_required_components(probnode)

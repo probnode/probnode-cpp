@@ -28,14 +28,18 @@ jobs:
 
       - name: libcurl (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev
+        run: sudo apt-get update && sudo apt-get install -y libcurl4-openssl-dev libssl-dev
       - name: libcurl (Windows, vcpkg)
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          vcpkg install curl:x64-windows
+          vcpkg install curl:x64-windows openssl:x64-windows
           echo "TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=$VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" >> "$GITHUB_ENV"
-      # macOS: the system libcurl of the SDK.
+      # macOS: the system libcurl of the SDK; OpenSSL from Homebrew for the Live client.
+      - name: OpenSSL (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: echo "OPENSSL_ROOT_DIR=$(brew --prefix openssl@3)" >> "$GITHUB_ENV"
 
       - name: Configure
         shell: bash
@@ -47,6 +51,8 @@ jobs:
         run: cmake --build build --config Release -j 4
       - name: Test (mock)
         run: ctest --test-dir build -C Release -R "^mock\." --output-on-failure
+      - name: Test (stream, in-process WebSocket server)
+        run: ctest --test-dir build -C Release -R "^stream\." --output-on-failure
       - name: Test (live, keyless)
         run: ctest --test-dir build -C Release -R "^live\." --output-on-failure
         env:

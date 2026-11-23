@@ -52,3 +52,14 @@ foreach(name IN LISTS PROBNODE_LIVE_TESTS)
   # Skipped (exit 77) unless PROBNODE_LIVE_BASE_URL is set.
   set_tests_properties(live.${name} PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 120)
 endforeach()
+
+if(PROBNODE_LIVE)
+  add_executable(probnode_stream_tests stream_tests.cpp)
+  target_link_libraries(probnode_stream_tests PRIVATE probnode::probnode ixwebsocket Threads::Threads)
+  foreach(name IN ITEMS live_subscribe_and_read live_reconnect_resubscribes_and_reports_the_gap
+                        live_unreachable_is_a_transport_error live_close_ends_next
+                        live_a_full_queue_restarts_the_reader)
+    add_test(NAME stream.${name} COMMAND probnode_stream_tests ${name})
+    set_tests_properties(stream.${name} PROPERTIES TIMEOUT 60)
+  endforeach()
+endif()

@@ -7,6 +7,17 @@ the API.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-23
+
+### Added
+
+- The Live API client, `probnode/live.hpp`: `probnode::live::Live` connects to
+  `wss://live.probnode.com/v2/live` (key as Bearer, none = Free), `subscribe` / `unsubscribe`
+  markets on channels with a choice of blocks, `next` with a timeout. JSON messages with their
+  `type` read out. Reconnect with backoff, resubscription and `on_gap`; a bounded queue
+  (`max_queue`). IXWebSocket over OpenSSL, built in; `-DPROBNODE_LIVE=OFF` leaves it out.
+- `examples/live_stream.cpp`; stream tests against an in-process WebSocket server.
+
 ## [0.1.0] - 2026-11-13
 
 First release of the official C++ client.

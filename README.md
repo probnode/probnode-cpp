@@ -51,6 +51,10 @@ Requirements:
   `vcpkg install curl` on Windows (then pass vcpkg's toolchain file to CMake).
 - [nlohmann/json](https://github.com/nlohmann/json) 3.11+, found if installed and fetched
   otherwise. It is private: no public header includes it.
+- For the Live API client (on by default, `-DPROBNODE_LIVE=OFF` leaves it out): OpenSSL
+  (`apt install libssl-dev`, `brew install openssl@3`, `vcpkg install openssl`).
+  [IXWebSocket](https://github.com/machinezone/IXWebSocket) is fetched and built in; no public
+  header includes it.
 
 ### FetchContent
 
@@ -58,7 +62,7 @@ Requirements:
 include(FetchContent)
 FetchContent_Declare(probnode
   GIT_REPOSITORY https://github.com/probnode/probnode-cpp
-  GIT_TAG v0.1.0)
+  GIT_TAG v0.2.0)
 FetchContent_MakeAvailable(probnode)
 
 target_link_libraries(my_app PRIVATE probnode::probnode)
@@ -76,7 +80,7 @@ cmake --install build --prefix /usr/local     # or any prefix on CMAKE_PREFIX_PA
 ```
 
 ```cmake
-find_package(probnode 0.1 REQUIRED)
+find_package(probnode 0.2 REQUIRED)
 target_link_libraries(my_app PRIVATE probnode::probnode)
 ```
 
@@ -202,6 +206,35 @@ PROBNODE_LIVE_BASE_URL=https://probnode.com ctest --test-dir build -R '^live\.' 
 
 The live tests are skipped unless `PROBNODE_LIVE_BASE_URL` is set.
 
+## Live API
+
+Every Polymarket book update and trade of the markets you subscribe to, as it happens, over one
+WebSocket - each enriched with analytics, risk against the normal for similar markets, security
+and statistics (`book+`, `trades+`). Without a key you are on the Free plan.
+
+```cpp
+#include <probnode/live.hpp>
+
+probnode::live::Options opt;
+if (const char* k = std::getenv("PROBNODE_API_KEY")) opt.key = k;
+probnode::live::Live live(opt);
+live.subscribe({"btc-updown-15m-1795366800"}, {"book+", "trades+"});
+while (auto m = live.next()) {
+  // m->type: "header", "norms", "book+", "trade+", "trade_ext", ...; m->json: the message
+  std::cout << m->type << '
+';
+}
+```
+
+- Messages are JSON, handed over as text with their `type` read out; parse them with any JSON
+  library. Probe, the binary format, comes in 0.3.0.
+- With `reconnect` on (the default) a dropped connection is reopened with backoff (0.5 s to
+  30 s), every market is subscribed again from a fresh snapshot, and `on_gap` reports the stretch
+  missed. A reader more than `max_queue` messages behind (100 000) gets the same fresh start
+  instead of an unbounded queue.
+- `examples/live_stream.cpp` streams one market. Channels, blocks and plans:
+  [probnode.com/docs/live-api](https://probnode.com/docs/live-api).
+
 ## Documentation
 
 - ProbNode documentation: [probnode.com/docs](https://probnode.com/docs)
@@ -238,7 +271,8 @@ This project follows the [Contributor Covenant](https://github.com/probnode/prob
 | Repository | Language | What it is | Package |
 |---|---|---|---|
 | [probnode-sdk](https://github.com/probnode/probnode-sdk) | Python | The official Python client, the `probnode` command line and the MCP server | [`probnode-sdk`](https://pypi.org/project/probnode-sdk/), [`probnode-mcp`](https://pypi.org/project/probnode-mcp/) on PyPI |
-| [probnode-rs](https://github.com/probnode/probnode-rs) | Rust | The official Rust client: async and blocking, typed models | `probnode` (crates.io release on the way) |
+| [probnode-rs](https://github.com/probnode/probnode-rs) | Rust | The official Rust client: async and blocking, typed models, Live API | [`probnode`](https://crates.io/crates/probnode) on crates.io |
+| [probnode-go](https://github.com/probnode/probnode-go) | Go | The Live API client for Go | `go get github.com/probnode/probnode-go` |
 | [probe](https://github.com/probnode/probe) | Rust, Python | Probe, the lossless order-book file format: specification, library and CLI | [`probe-format`](https://crates.io/crates/probe-format), [`probe-cli`](https://crates.io/crates/probe-cli) on crates.io |
 
 ## License

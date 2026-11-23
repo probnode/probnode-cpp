@@ -37,7 +37,7 @@ inline constexpr const char* kDefaultBaseUrl = "https://probnode.com";
 /// POST /v1/data/urls signs at most this many paths a request; Client::sign() batches.
 inline constexpr std::size_t kSignBatch = 100;
 
-/// The library version, "0.1.0".
+/// The library version, "0.2.0".
 const char* version() noexcept;
 
 /// How a Client is made. Unset fields come from the environment when `from_env` is true.
