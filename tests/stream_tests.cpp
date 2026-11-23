@@ -4,6 +4,7 @@
 #include <string>
 #include <thread>
 
+#include <ixwebsocket/IXNetSystem.h>
 #include <ixwebsocket/IXWebSocketServer.h>
 
 #include "harness.hpp"
@@ -23,7 +24,8 @@ struct Fake {
   int burst = 1;  // messages sent for each sub on the first connection
 
   Fake(int port, bool drop_first, int burst_first = 1)
-      : server(port, "127.0.0.1"), drop(drop_first), burst(burst_first) {
+      : server((ix::initNetSystem(), port), "127.0.0.1"), drop(drop_first), burst(burst_first) {
+    // initNetSystem: WSAStartup on Windows, before the server's first socket call.
     server.setOnClientMessageCallback([this](std::shared_ptr<ix::ConnectionState>, ix::WebSocket& ws,
                                              const ix::WebSocketMessagePtr& m) {
       if (m->type == ix::WebSocketMessageType::Open) {

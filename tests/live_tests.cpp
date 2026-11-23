@@ -31,10 +31,11 @@ TEST(live_datasets) {
   for (const auto& d : ds) {
     if (d.code != "book_full") continue;
     found = true;
-    bool evmin = false, parquet = false;
-    for (const auto& f : d.formats) evmin = evmin || f == "evmin";
+    // The hourly format is Probe (named "evmin" until 2026-11).
+    bool probe = false, parquet = false;
+    for (const auto& f : d.formats) probe = probe || f == "probe";
     for (const auto& f : d.market_day_formats) parquet = parquet || f == "parquet";
-    CHECK(evmin);
+    CHECK(probe);
     CHECK(parquet);
   }
   CHECK(found);
